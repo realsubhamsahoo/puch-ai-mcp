@@ -12,6 +12,10 @@ from pydantic import BaseModel, Field, AnyUrl
 import markdownify
 import httpx
 import readabilipy
+from tools.resume.create_resume import create_resume as create_resume_tool
+from tools.resume.update_resume import update_resume as update_resume_tool
+from tools.resume.ats_score_checker import ats_score_checker as ats_score_checker_tool
+
 
 # --- Load environment variables ---
 load_dotenv()
@@ -202,6 +206,77 @@ async def make_img_black_and_white(
         return [ImageContent(type="image", mimeType="image/png", data=bw_base64)]
     except Exception as e:
         raise McpError(ErrorData(code=INTERNAL_ERROR, message=str(e)))
+
+# --- Tool: create_resume ---
+CreateResumeDescription = RichToolDescription(
+    description="Create a new resume from scratch.",
+    use_when="Use this when the user wants to create a new resume.",
+    side_effects="Generates a new resume in LaTeX format.",
+)
+
+@mcp.tool(description=CreateResumeDescription.model_dump_json())
+async def create_resume(
+    name: Annotated[str, Field(description="User's full name.")],
+    address: Annotated[str, Field(description="User's address.")],
+    linkedin_url: Annotated[str, Field(description="URL to user's LinkedIn profile.")],
+    github_url: Annotated[str, Field(description="URL to user's GitHub profile.")],
+    website_url: Annotated[str, Field(description="URL to user's personal website or portfolio.")],
+    education: Annotated[str, Field(description="User's educational history.")],
+    experience: Annotated[str, Field(description="User's work experience.")],
+    projects: Annotated[str, Field(description="User's projects, including names and repository links.")],
+    achievements: Annotated[str, Field(description="User's achievements and certifications.")],
+    extracurriculars: Annotated[str, Field(description="User's extracurricular activities.")],
+) -> str:
+    return create_resume_tool(
+        name,
+        address,
+        linkedin_url,
+        github_url,
+        website_url,
+        education,
+        experience,
+        projects,
+        achievements,
+        extracurriculars,
+    )
+
+# --- Tool: update_resume ---
+UpdateResumeDescription = RichToolDescription(
+    description="Update an existing resume.",
+    use_when="Use this when the user wants to update an existing resume.",
+    side_effects="Updates an existing resume in LaTeX format.",
+)
+
+@mcp.tool(description=UpdateResumeDescription.model_dump_json())
+async def update_resume(
+    existing_resume_latex: Annotated[str, Field(description="The user's existing resume in LaTeX format.")],
+    target_job_profile: Annotated[str, Field(description="The target job profile for the updated resume.")],
+    sections_to_improve: Annotated[str, Field(description="Specific sections or areas to improve for ATS optimization.")],
+) -> str:
+    return update_resume_tool(
+        existing_resume_latex,
+        target_job_profile,
+        sections_to_improve,
+    )
+
+# --- Tool: ats_score_checker ---
+AtsScoreCheckerDescription = RichToolDescription(
+    description="Check the ATS score of a resume.",
+    use_when="Use this when the user wants to check the ATS score of their resume.",
+    side_effects="Returns the ATS score and suggestions for improvement.",
+)
+
+@mcp.tool(description=AtsScoreCheckerDescription.model_dump_json())
+async def ats_score_checker(
+    resume_text: Annotated[str, Field(description="The user's resume in LaTeX or plain text format.")],
+    target_role: Annotated[str, Field(description="The target role for the resume.")],
+    experience_level: Annotated[str, Field(description="The user's experience level.")],
+) -> str:
+    return ats_score_checker_tool(
+        resume_text,
+        target_role,
+        experience_level,
+    )
 
 # --- Run MCP Server ---
 async def main():
