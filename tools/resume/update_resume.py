@@ -1,13 +1,16 @@
-import os
-import google.generativeai as genai
-from dotenv import load_dotenv
+from pydantic import BaseModel
+from tools.utils import get_gemini_model, generate_with_retry
 
-# Load environment variables
-load_dotenv()
+class RichToolDescription(BaseModel):
+    description: str
+    use_when: str
+    side_effects: str | None = None
 
-# Configure Gemini API
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-genai.configure(api_key=GEMINI_API_KEY)
+UpdateResumeDescription = RichToolDescription(
+    description="Update an existing resume.",
+    use_when="Use this when the user wants to update an existing resume.",
+    side_effects="Updates an existing resume in LaTeX format.",
+)
 
 def update_resume(
     existing_resume_latex: str,
@@ -20,6 +23,7 @@ def update_resume(
     prompt = f"""
     Update the following LaTeX resume to be optimized for the target job profile.
     Focus on improving the specified sections for better ATS compatibility.
+    Respond ONLY with the completed LaTeX document code, without any explanation or extra text.
 
     Existing LaTeX Resume:
     ```latex
@@ -29,10 +33,7 @@ def update_resume(
     Target Job Profile: {target_job_profile}
 
     Sections to Improve: {sections_to_improve}
-
-    Please provide the full, updated LaTeX code for the resume.
     """
 
-    model = genai.GenerativeModel('gemini-pro')
-    response = model.generate_content(prompt)
-    return response.text
+    model = get_gemini_model()
+    return generate_with_retry(model, prompt)

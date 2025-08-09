@@ -1,13 +1,16 @@
-import os
-import google.generativeai as genai
-from dotenv import load_dotenv
+from pydantic import BaseModel
+from tools.utils import get_gemini_model, generate_with_retry
 
-# Load environment variables
-load_dotenv()
+class RichToolDescription(BaseModel):
+    description: str
+    use_when: str
+    side_effects: str | None = None
 
-# Configure Gemini API
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-genai.configure(api_key=GEMINI_API_KEY)
+CreateResumeDescription = RichToolDescription(
+    description="Create a new resume from scratch.",
+    use_when="Use this when the user wants to create a new resume.",
+    side_effects="Generates a new resume in LaTeX format.",
+)
 
 def create_resume(
     name: str,
@@ -20,13 +23,15 @@ def create_resume(
     projects: str,
     achievements: str,
     extracurriculars: str,
+    template_type: str = "modern",
 ) -> str:
     """
     Generates a professional LaTeX resume from user-provided details.
     """
     prompt = f"""
     Create a professional LaTeX resume based on the following details.
-    Use a clean and modern LaTeX template.
+    Use a {template_type} and clean LaTeX template.
+    Respond ONLY with the completed LaTeX document code, without any explanation or extra text.
 
     Name: {name}
     Address: {address}
@@ -48,10 +53,7 @@ def create_resume(
 
     Extracurricular Activities:
     {extracurriculars}
-
-    Please generate the full LaTeX code for the resume.
     """
 
-    model = genai.GenerativeModel('gemini-pro')
-    response = model.generate_content(prompt)
-    return response.text
+    model = get_gemini_model()
+    return generate_with_retry(model, prompt)

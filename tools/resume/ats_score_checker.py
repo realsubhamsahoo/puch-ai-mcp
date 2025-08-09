@@ -1,13 +1,16 @@
-import os
-import google.generativeai as genai
-from dotenv import load_dotenv
+from pydantic import BaseModel
+from tools.utils import get_gemini_model, generate_with_retry
 
-# Load environment variables
-load_dotenv()
+class RichToolDescription(BaseModel):
+    description: str
+    use_when: str
+    side_effects: str | None = None
 
-# Configure Gemini API
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-genai.configure(api_key=GEMINI_API_KEY)
+AtsScoreCheckerDescription = RichToolDescription(
+    description="Check the ATS score of a resume.",
+    use_when="Use this when the user wants to check the ATS score of their resume.",
+    side_effects="Returns the ATS score and suggestions for improvement.",
+)
 
 def ats_score_checker(
     resume_text: str,
@@ -19,6 +22,7 @@ def ats_score_checker(
     """
     prompt = f"""
     Analyze the following resume and provide an ATS score.
+    If the resume is in LaTeX format, you can ignore the preamble and focus on the content.
 
     Resume (LaTeX or plain text):
     ```
@@ -28,12 +32,13 @@ def ats_score_checker(
     Target Role: {target_role}
     Experience Level: {experience_level}
 
-    Please provide the following:
-    1. A general ATS score out of 100.
-    2. An ATS score based on the target role and experience level, out of 100.
-    3. A list of specific, actionable suggestions for improvement.
+    Respond with a JSON object with the following keys:
+    - "overall_score": A general ATS score out of 100.
+    - "role_specific_score": An ATS score based on the target role and experience level, out of 100.
+    - "suggestions": A list of specific, actionable suggestions for improvement.
+
+    Do not include any extra text or explanation in your response.
     """
 
-    model = genai.GenerativeModel('gemini-pro')
-    response = model.generate_content(prompt)
-    return response.text
+    model = get_gemini_model()
+    return generate_with_retry(model, prompt)
