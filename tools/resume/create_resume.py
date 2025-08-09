@@ -52,6 +52,6 @@ def create_resume(
     Please generate the full LaTeX code for the resume.
     """
 
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-1.5-pro-latest')
     response = model.generate_content(prompt)
     return response.text
