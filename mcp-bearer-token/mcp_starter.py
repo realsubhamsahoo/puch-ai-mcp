@@ -14,6 +14,7 @@ import httpx
 import readabilipy
 from tools.resume.create_resume import create_resume as create_resume_tool
 from tools.resume.update_resume import update_resume as update_resume_tool
+from tools.resume.update_resume_section import update_section as update_section_tool
 from tools.resume.ats_score_checker import ats_score_checker as ats_score_checker_tool
 
 
@@ -209,35 +210,21 @@ async def make_img_black_and_white(
 
 # --- Tool: create_resume ---
 CreateResumeDescription = RichToolDescription(
-    description="Create a new resume from scratch.",
-    use_when="Use this when the user wants to create a new resume.",
-    side_effects="Generates a new resume in LaTeX format.",
+    description="Create a new resume from scratch based on the user's name, target job role, and a short description.",
+    use_when="This is the first tool to use when a user wants to create a resume. It should be used to generate the initial version of the resume.",
+    side_effects="Generates a new resume in LaTeX format, with placeholder content for some sections.",
 )
 
 @mcp.tool(description=CreateResumeDescription.model_dump_json())
 async def create_resume(
     name: Annotated[str, Field(description="User's full name.")],
-    address: Annotated[str, Field(description="User's address.")],
-    linkedin_url: Annotated[str, Field(description="URL to user's LinkedIn profile.")],
-    github_url: Annotated[str, Field(description="URL to user's GitHub profile.")],
-    website_url: Annotated[str, Field(description="URL to user's personal website or portfolio.")],
-    education: Annotated[str, Field(description="User's educational history.")],
-    experience: Annotated[str, Field(description="User's work experience.")],
-    projects: Annotated[str, Field(description="User's projects, including names and repository links.")],
-    achievements: Annotated[str, Field(description="User's achievements and certifications.")],
-    extracurriculars: Annotated[str, Field(description="User's extracurricular activities.")],
+    target_job_role: Annotated[str, Field(description="The job role the user is targeting.")],
+    user_description: Annotated[str, Field(description="A short description from the user about their background or goals.")],
 ) -> str:
     return create_resume_tool(
         name,
-        address,
-        linkedin_url,
-        github_url,
-        website_url,
-        education,
-        experience,
-        projects,
-        achievements,
-        extracurriculars,
+        target_job_role,
+        user_description,
     )
 
 # --- Tool: update_resume ---
@@ -258,6 +245,28 @@ async def update_resume(
         target_job_profile,
         sections_to_improve,
     )
+
+
+# --- Tool: update_section ---
+UpdateSectionDescription = RichToolDescription(
+    description="Update a specific section of an existing resume.",
+    use_when="Use this when the user wants to update, add, or replace a specific section of the resume that has already been generated.",
+    side_effects="The specified section of the resume will be replaced with the new content.",
+)
+
+
+@mcp.tool(description=UpdateSectionDescription.model_dump_json())
+async def update_section(
+    existing_resume_latex: Annotated[str, Field(description="The full LaTeX content of the existing resume.")],
+    section_name: Annotated[str, Field(description="The name of the section to update (e.g., 'Education', 'Work Experience').")],
+    new_section_content: Annotated[str, Field(description="The new, full LaTeX content for the section, including the section heading.")],
+) -> str:
+    return update_section_tool(
+        existing_resume_latex,
+        section_name,
+        new_section_content,
+    )
+
 
 # --- Tool: ats_score_checker ---
 AtsScoreCheckerDescription = RichToolDescription(

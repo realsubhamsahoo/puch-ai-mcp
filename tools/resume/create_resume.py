@@ -11,45 +11,44 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 def create_resume(
     name: str,
-    address: str,
-    linkedin_url: str,
-    github_url: str,
-    website_url: str,
-    education: str,
-    experience: str,
-    projects: str,
-    achievements: str,
-    extracurriculars: str,
+    target_job_role: str,
+    user_description: str,
 ) -> str:
     """
     Generates a professional LaTeX resume from user-provided details.
     """
     prompt = f"""
-    Create a professional LaTeX resume based on the following details.
+    Create a professional and complete LaTeX resume for a person named {name}.
+    The user is targeting the job role of '{target_job_role}'.
+    Here is a short description from the user: '{user_description}'.
+
+    Based on this information, generate a resume. Invent plausible details for sections like Education, Work Experience, Projects, etc. The user will be able to update these sections later.
     Use a clean and modern LaTeX template.
 
-    Name: {name}
-    Address: {address}
-    LinkedIn: {linkedin_url}
-    GitHub: {github_url}
-    Website: {website_url}
+    IMPORTANT: For each section of the resume (e.g., Education, Work Experience, Projects, Skills), you MUST enclose the entire section's LaTeX code, including the section heading, within special comment markers.
+    The format for these markers is:
+    % BEGIN_SECTION: [SECTION_NAME]
+    ... LaTeX code for the section ...
+    % END_SECTION: [SECTION_NAME]
 
-    Education:
-    {education}
+    For example:
+    % BEGIN_SECTION: Education
+    \\section*{{Education}}
+    \\resumeSubheadingListStart
+      \\resumeSubheading
+        {{University of Example}}{{Anytown, USA}}
+        {{Bachelor of Science in Computer Science}}{{2020 -- 2024}}
+    \\resumeSubheadingListEnd
+    % END_SECTION: Education
 
-    Work Experience:
-    {experience}
-
-    Projects:
-    {projects}
-
-    Achievements/Certifications:
-    {achievements}
-
-    Extracurricular Activities:
-    {extracurriculars}
-
-    Please generate the full LaTeX code for the resume.
+    Please generate the full LaTeX code for the resume with these markers for all standard resume sections, including:
+    - Contact Information
+    - Education
+    - Work Experience
+    - Projects
+    - Skills
+    - Achievements/Certifications
+    - Extracurricular Activities
     """
 
     model = genai.GenerativeModel('gemini-1.5-pro-latest')
